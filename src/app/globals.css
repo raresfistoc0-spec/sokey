@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+/* ========================= */
+/* ROOT VARIABLES */
+/* ========================= */
+
+:root {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ========================= */
+/* GLOBAL RESET */
+/* ========================= */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+
+  /* Elimină complet albul implicit */
+  background: radial-gradient(
+    1200px 800px at 50% -10%,
+    #1e293b 0%,
+    #0f172a 40%,
+    #000000 85%
+  );
+
+  min-height: 100vh;
+  width: 100%;
+
+  /* Elimină flash alb pe mobile */
+  background-color: #000;
+
+  /* Smooth scrolling */
+  scroll-behavior: smooth;
+}
+
+/* ========================= */
+/* iPhone Safe Area Fix */
+/* ========================= */
+
+body {
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-top: env(safe-area-inset-top);
+}
+
+/* ========================= */
+/* Prevent white overscroll */
+/* ========================= */
+
+html {
+  background-color: #000;
+}
+
+/* ========================= */
+/* Remove tap highlight mobile */
+/* ========================= */
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
