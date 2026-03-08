@@ -46,7 +46,7 @@ export default function TagClient({ tagId }: { tagId: string }) {
         setEditSpotifyLink(link);
       } catch (e) {
         console.error(e);
-        setError("Eroare la încărcare.");
+        setError("Eroare la încărqwwcare.");
         setExists(false);
       } finally {
         setLoading(false);
