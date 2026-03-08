@@ -37,28 +37,20 @@ export default function TagClient({ tagId }: { tagId: string }) {
           return;
         }
 
-        const link = (data.spotifyLink || "").toString();
-        const u = (data.username || "").toString();
-
         setExists(true);
-        setSpotifyLink(link);
-        setSavedUsername(u);
-        setEditSpotifyLink(link);
+        setSpotifyLink(data.spotifyLink || "");
+        setSavedUsername(data.username || "");
+        setEditSpotifyLink(data.spotifyLink || "");
       } catch (e) {
         console.error(e);
-        setError("Eroare la încărqwwcare.");
+        setError("Eroare la încărcare.");
         setExists(false);
       } finally {
         setLoading(false);
       }
     }
 
-    if (safeTag && safeTag !== "undefined") {
-      load();
-    } else {
-      setError("Tag invalid.");
-      setLoading(false);
-    }
+    if (safeTag && safeTag !== "undefined") load();
   }, [safeTag]);
 
   useEffect(() => {
@@ -69,10 +61,7 @@ export default function TagClient({ tagId }: { tagId: string }) {
   function isSpotifyUrl(url: string) {
     try {
       const u = new URL(url);
-      return (
-        u.hostname.includes("spotify.com") ||
-        u.hostname.includes("open.spotify.com")
-      );
+      return u.hostname.includes("spotify.com");
     } catch {
       return false;
     }
@@ -80,24 +69,19 @@ export default function TagClient({ tagId }: { tagId: string }) {
 
   async function activate() {
     setError("");
-    setSuccess("");
 
     const link = spotifyLink.trim();
     const p = pin.trim();
     const u = username.trim();
 
-    if (!u) return setError("Introdu un username");
-    if (!link) return setError("Lipsește link-ul spotify");
-    if (!isSpotifyUrl(link)) return setError("Link invalid");
-    if (!p) return setError("Lipsește PIN-ul");
-    if (p.length < 4) return setError("PIN-ul conține minim 4 caractere");
+    if (!u) return setError("Introdu username");
+    if (!isSpotifyUrl(link)) return setError("Link Spotify invalid");
+    if (p.length < 4) return setError("PIN minim 4 caractere");
 
     try {
       const res = await fetch(`/api/tags/${safeTag}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           spotifyLink: link,
           pin: p,
@@ -107,37 +91,29 @@ export default function TagClient({ tagId }: { tagId: string }) {
 
       const data = await res.json();
 
-      if (!data.success) {
-        setError(data.error || "Eroare la salvare.");
-        return;
-      }
+      if (!data.success) return setError(data.error);
 
       setExists(true);
       setSavedUsername(u);
       setPin("");
-    } catch (e) {
-      console.error(e);
-      setError("Eroare la salvare.");
+    } catch {
+      setError("Eroare la salvare");
     }
   }
 
   async function updateLink() {
     setError("");
-    setSuccess("");
 
     const link = editSpotifyLink.trim();
     const p = editPin.trim();
 
-    if (!link) return setError("Lipsește link-ul Spotify");
     if (!isSpotifyUrl(link)) return setError("Link invalid");
-    if (!p) return setError("Introdu PIN-ul");
+    if (!p) return setError("PIN necesar");
 
     try {
       const res = await fetch(`/api/tags/${safeTag}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           spotifyLink: link,
           pin: p,
@@ -146,16 +122,12 @@ export default function TagClient({ tagId }: { tagId: string }) {
 
       const data = await res.json();
 
-      if (!data.success) {
-        setError(data.error || "Eroare la actualizare");
-        return;
-      }
+      if (!data.success) return setError(data.error);
 
       setSpotifyLink(link);
       setEditPin("");
       setEditMode(false);
-    } catch (e) {
-      console.error(e);
+    } catch {
       setError("Eroare la actualizare");
     }
   }
@@ -169,8 +141,6 @@ export default function TagClient({ tagId }: { tagId: string }) {
       alignItems: "center",
       justifyContent: "center",
       padding: 24,
-      fontFamily:
-        "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto",
       color: "#f1f5f9",
     },
 
@@ -178,19 +148,9 @@ export default function TagClient({ tagId }: { tagId: string }) {
       width: "100%",
       maxWidth: 420,
       padding: 40,
-      background: "transparent",
-      borderRadius: 0,
-      backdropFilter: "none",
-      boxShadow: "none",
       display: "flex",
       flexDirection: "column",
       gap: 24,
-    },
-
-    section: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 14,
     },
 
     input: {
@@ -200,17 +160,9 @@ export default function TagClient({ tagId }: { tagId: string }) {
       border: "1px solid rgba(0,0,0,0.15)",
       background: "#ffffff",
       color: "#0f172a",
-      fontSize: 14,
-      outline: "none",
     },
 
-    helper: {
-      fontSize: 12,
-      opacity: 0.6,
-      textAlign: "left",
-    },
-
-    btnPrimary: {
+    btn: {
       width: "100%",
       padding: 18,
       borderRadius: 26,
@@ -218,19 +170,6 @@ export default function TagClient({ tagId }: { tagId: string }) {
       background: "#1DB954",
       color: "white",
       fontWeight: 800,
-      fontSize: 16,
-      cursor: "pointer",
-      boxShadow: "0 0 50px rgba(29,185,84,0.55)",
-    },
-
-    btnGhost: {
-      width: "100%",
-      padding: 16,
-      borderRadius: 24,
-      border: "1px solid rgba(255,255,255,0.15)",
-      background: "transparent",
-      color: "#cbd5e1",
-      fontWeight: 600,
       cursor: "pointer",
     },
   };
@@ -238,7 +177,84 @@ export default function TagClient({ tagId }: { tagId: string }) {
   return (
     <div style={S.page}>
       <div style={S.card}>
-        {/* UI identic cu al tău */}
+        <Image
+          src="/logo1.png"
+          alt="logo"
+          width={100}
+          height={100}
+          style={{ margin: "0 auto" }}
+        />
+
+        <h1 style={{ textAlign: "center", fontSize: 34 }}>
+          {savedUsername || username || "SOKEY"}
+        </h1>
+
+        {error && <div style={{ color: "red" }}>{error}</div>}
+
+        {!exists ? (
+          <>
+            <input
+              style={S.input}
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+
+            <input
+              style={S.input}
+              placeholder="Link Spotify"
+              value={spotifyLink}
+              onChange={(e) => setSpotifyLink(e.target.value)}
+            />
+
+            <input
+              style={S.input}
+              type="password"
+              placeholder="PIN"
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+            />
+
+            <button style={S.btn} onClick={activate}>
+              Activează
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              style={S.btn}
+              onClick={() => (window.location.href = spotifyLink)}
+            >
+              Deschide Spotify
+            </button>
+
+            <button onClick={() => setEditMode(!editMode)}>
+              Modifică link
+            </button>
+
+            {editMode && (
+              <>
+                <input
+                  style={S.input}
+                  value={editSpotifyLink}
+                  onChange={(e) => setEditSpotifyLink(e.target.value)}
+                />
+
+                <input
+                  style={S.input}
+                  type="password"
+                  placeholder="PIN"
+                  value={editPin}
+                  onChange={(e) => setEditPin(e.target.value)}
+                />
+
+                <button style={S.btn} onClick={updateLink}>
+                  Salvează
+                </button>
+              </>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
