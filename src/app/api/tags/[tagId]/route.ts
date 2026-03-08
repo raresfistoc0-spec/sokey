@@ -112,6 +112,8 @@ export async function POST(
       });
     }
 
+    
+
     // 🔥 UPDATE LINK EXISTENT
 
     const data = snap.data() as TagDoc;
@@ -124,6 +126,78 @@ export async function POST(
         { status: 400 }
       );
     }
+
+    const ok = await bcrypt.compare(pin, pinHash);
+
+    if (!ok) {
+      return NextResponse.json(
+        { success: false, error: "PIN incorect" },
+        { status: 403 }
+      );
+    }
+
+    await ref.update({
+      spotifyLink,
+      updatedAt: new Date(),
+    });
+
+    return NextResponse.json({
+      success: true,
+      mode: "updated",
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    return NextResponse.json(
+      { success: false, error: "Eroare server" },
+      { status: 500 }
+    );
+  }
+}
+export async function PUT(
+  req: Request,
+  context: { params: { tagId: string } }
+) {
+  const tagId = (context.params?.tagId ?? "").toString().trim();
+
+  if (!tagId) {
+    return NextResponse.json({ success: false, error: "Tag invalid" }, { status: 400 });
+  }
+
+  try {
+
+    const body = await req.json().catch(() => ({}));
+
+    const spotifyLink = (body?.spotifyLink || "").toString().trim();
+    const pin = (body?.pin || "").toString().trim();
+
+    if (!spotifyLink) {
+      return NextResponse.json(
+        { success: false, error: "Link Spotify lipsă" },
+        { status: 400 }
+      );
+    }
+
+    if (!pin) {
+      return NextResponse.json(
+        { success: false, error: "PIN lipsă" },
+        { status: 400 }
+      );
+    }
+
+    const ref = db.collection("tags").doc(tagId);
+    const snap = await ref.get();
+
+    if (!snap.exists) {
+      return NextResponse.json(
+        { success: false, error: "Tag-ul nu există" },
+        { status: 404 }
+      );
+    }
+
+    const data = snap.data() as TagDoc;
+    const pinHash = (data?.pinHash || "").toString();
 
     const ok = await bcrypt.compare(pin, pinHash);
 
