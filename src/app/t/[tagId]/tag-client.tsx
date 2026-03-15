@@ -222,15 +222,18 @@ export default function TagClient({
         <div style={{...S.section,alignItems:"center",textAlign:"center",position:"relative"}}>
 
           <div
-            style={{
-              position:"absolute",
-              width:240,
-              height:240,
-              background:"radial-gradient(circle, rgba(29,185,84,0.35) 0%, rgba(29,185,84,0.15) 40%, transparent 70%)",
-              filter:"blur(50px)",
-              borderRadius:"50%"
-            }}
-          />
+  style={{
+    position:"absolute",
+    width:240,
+    height:240,
+    background:"radial-gradient(circle, rgba(29,185,84,0.35) 0%, rgba(29,185,84,0.15) 40%, transparent 70%)",
+    filter:"blur(70px)",
+    borderRadius:"50%",
+    transform:"translateZ(0)",
+    willChange:"transform",
+    pointerEvents:"none"
+  }}
+/>
 
           <Image
             src="/logo1.png"
@@ -242,20 +245,7 @@ export default function TagClient({
               filter:"brightness(1.5) contrast(1.2) drop-shadow(0 0 30px rgba(29,185,84,0.7))"
             }}
           />
-      {error && (
-  <div
-    style={{
-      color: "#f87171",
-      position: "absolute",
-      top: 165,
-      left: 0,
-      right: 0,
-      textAlign: "left",
-    }}
-  >
-    {error}
-  </div>
-)}
+      
 
           <div
             style={{
