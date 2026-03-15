@@ -3,25 +3,34 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
-export default function TagClient({ tagId }: { tagId: string }) {
+export default function TagClient({
+  tagId,
+  initialExists,
+  initialSpotifyLink,
+  initialUsername,
+}: {
+  tagId: string;
+  initialExists: boolean;
+  initialSpotifyLink: string;
+  initialUsername: string;
+}) {
 
-  const [loading,setLoading] = useState(true);
-  const [exists,setExists] = useState(false);
+  
+  const [exists,setExists] = useState(initialExists);
 
-  const [spotifyLink,setSpotifyLink] = useState("");
+  const [spotifyLink,setSpotifyLink] = useState(initialSpotifyLink);
   const [pin,setPin] = useState("");
 
   const [username,setUsername] = useState("");
-  const [savedUsername,setSavedUsername] = useState("");
+  const [savedUsername,setSavedUsername] = useState(initialUsername);
 
   const [error,setError] = useState("");
   const [success,setSuccess] = useState("");
 
   const [editMode,setEditMode] = useState(false);
-  const [editSpotifyLink,setEditSpotifyLink] = useState("");
+  const [editSpotifyLink,setEditSpotifyLink] = useState(initialSpotifyLink);
   const [editPin,setEditPin] = useState("");
-
-  const safeTag = useMemo(()=> (tagId || "").trim(),[tagId]);
+  const safeTag = tagId.trim();
 
   async function safeJson(res:Response){
     try{
@@ -32,51 +41,6 @@ export default function TagClient({ tagId }: { tagId: string }) {
       throw new Error("Server error");
     }
   }
-
-  useEffect(() => {
-
-    if (!safeTag) {
-      setLoading(false);
-      return;
-    }
-
-    async function loadTag() {
-
-      try {
-
-        setLoading(true);
-
-        const res = await fetch(`/api/tags/${safeTag}`);
-
-        if (!res.ok) throw new Error("API error");
-
-        const data = await res.json();
-
-        if (data.exists) {
-          setExists(true);
-          setSpotifyLink(data.spotifyLink || "");
-          setSavedUsername(data.username || "");
-          setEditSpotifyLink(data.spotifyLink || "");
-        } else {
-          setExists(false);
-        }
-
-      } catch (err) {
-
-        console.error(err);
-        setError("Eroare la încărcare");
-
-      } finally {
-
-        setLoading(false);
-
-      }
-
-    }
-
-    loadTag();
-
-  }, [safeTag]);
 
 
   function isSpotifyUrl(url:string){
@@ -278,18 +242,20 @@ export default function TagClient({ tagId }: { tagId: string }) {
               filter:"brightness(1.5) contrast(1.2) drop-shadow(0 0 30px rgba(29,185,84,0.7))"
             }}
           />
-          <div
-  style={{
-    color: "#f87171",
-    position: "absolute",
-    top: 165,
-    left: 0,
-    right: 0,
-    textAlign: "left",
-  }}
->
-  {error}
-</div>
+      {error && (
+  <div
+    style={{
+      color: "#f87171",
+      position: "absolute",
+      top: 165,
+      left: 0,
+      right: 0,
+      textAlign: "left",
+    }}
+  >
+    {error}
+  </div>
+)}
 
           <div
             style={{
