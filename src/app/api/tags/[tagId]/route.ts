@@ -10,14 +10,24 @@ type TagDoc = {
   updatedAt?: any;
 };
 
+// =========================
+// GET TAG
+// =========================
+
 export async function GET(
   _req: Request,
-  context: { params: { tagId: string } }
+  { params }: { params: Promise<{ tagId: string }> }
 ) {
-  const tagId = (context.params?.tagId ?? "").toString().trim();
 
-  if (!tagId) {
-    return NextResponse.json({ success: false, error: "Tag invalid" }, { status: 400 });
+  const { tagId } = await params;
+
+  const cleanTag = tagId?.toString().trim();
+
+  if (!cleanTag) {
+    return NextResponse.json(
+      { success: false, error: "Tag invalid" },
+      { status: 400 }
+    );
   }
 
   try {
@@ -38,12 +48,12 @@ export async function GET(
     return NextResponse.json({
       success: true,
       exists: true,
-      spotifyLink: (data.spotifyLink || "").toString(),
-      username: (data.username || "").toString(),
+      spotifyLink: data.spotifyLink || "",
+      username: data.username || "",
     });
-
   } catch (err) {
     console.error(err);
+
     return NextResponse.json(
       { success: false, error: "Eroare server" },
       { status: 500 }
@@ -51,23 +61,25 @@ export async function GET(
   }
 }
 
+// =========================
+// CREATE TAG
+// =========================
+
 export async function POST(
   req: Request,
-  context: { params: { tagId: string } }
+  { params }: { params: Promise<{ tagId: string }> }
 ) {
-  const tagId = (context.params?.tagId ?? "").toString().trim();
 
-  if (!tagId) {
-    return NextResponse.json({ success: false, error: "Tag invalid" }, { status: 400 });
-  }
+  const { tagId } = await params;
+
+  const cleanTag = tagId?.toString().trim();
 
   try {
+    const body = await req.json();
 
-    const body = await req.json().catch(() => ({}));
-
-    const spotifyLink = (body?.spotifyLink || "").toString().trim();
-    const pin = (body?.pin || "").toString().trim();
-    const username = (body?.username || "").toString().trim();
+    const spotifyLink = body?.spotifyLink?.toString().trim();
+    const pin = body?.pin?.toString().trim();
+    const username = body?.username?.toString().trim();
 
     if (!spotifyLink) {
       return NextResponse.json(
@@ -86,9 +98,8 @@ export async function POST(
     const ref = db.collection("tags").doc(tagId);
     const snap = await ref.get();
 
-    // 🔥 CREARE TAG
+    // CREATE TAG
     if (!snap.exists) {
-
       if (!username) {
         return NextResponse.json(
           { success: false, error: "Username obligatoriu" },
@@ -112,13 +123,11 @@ export async function POST(
       });
     }
 
-    
-
-    // 🔥 UPDATE LINK EXISTENT
+    // UPDATE EXISTING TAG
 
     const data = snap.data() as TagDoc;
 
-    const pinHash = (data?.pinHash || "").toString();
+    const pinHash = data?.pinHash;
 
     if (!pinHash) {
       return NextResponse.json(
@@ -145,7 +154,6 @@ export async function POST(
       success: true,
       mode: "updated",
     });
-
   } catch (err) {
     console.error(err);
 
@@ -155,22 +163,25 @@ export async function POST(
     );
   }
 }
+
+// =========================
+// UPDATE TAG
+// =========================
+
 export async function PUT(
   req: Request,
-  context: { params: { tagId: string } }
+  { params }: { params: Promise<{ tagId: string }> }
 ) {
-  const tagId = (context.params?.tagId ?? "").toString().trim();
 
-  if (!tagId) {
-    return NextResponse.json({ success: false, error: "Tag invalid" }, { status: 400 });
-  }
+  const { tagId } = await params;
+
+  const cleanTag = tagId?.toString().trim();
 
   try {
+    const body = await req.json();
 
-    const body = await req.json().catch(() => ({}));
-
-    const spotifyLink = (body?.spotifyLink || "").toString().trim();
-    const pin = (body?.pin || "").toString().trim();
+    const spotifyLink = body?.spotifyLink?.toString().trim();
+    const pin = body?.pin?.toString().trim();
 
     if (!spotifyLink) {
       return NextResponse.json(
@@ -197,9 +208,8 @@ export async function PUT(
     }
 
     const data = snap.data() as TagDoc;
-    const pinHash = (data?.pinHash || "").toString();
 
-    const ok = await bcrypt.compare(pin, pinHash);
+    const ok = await bcrypt.compare(pin, data.pinHash || "");
 
     if (!ok) {
       return NextResponse.json(
@@ -217,7 +227,6 @@ export async function PUT(
       success: true,
       mode: "updated",
     });
-
   } catch (err) {
     console.error(err);
 

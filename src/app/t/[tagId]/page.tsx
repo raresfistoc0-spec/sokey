@@ -5,6 +5,8 @@ export default async function Page({
 }: {
   params: Promise<{ tagId: string }>;
 }) {
+
   const { tagId } = await params;
+
   return <TagClient tagId={tagId} />;
 }

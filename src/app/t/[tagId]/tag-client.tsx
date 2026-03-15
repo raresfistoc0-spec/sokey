@@ -4,258 +4,410 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
 export default function TagClient({ tagId }: { tagId: string }) {
-  const [loading, setLoading] = useState(true);
-  const [exists, setExists] = useState(false);
 
-  const [spotifyLink, setSpotifyLink] = useState("");
-  const [pin, setPin] = useState("");
+  const [loading,setLoading] = useState(true);
+  const [exists,setExists] = useState(false);
 
-  const [username, setUsername] = useState("");
-  const [savedUsername, setSavedUsername] = useState("");
+  const [spotifyLink,setSpotifyLink] = useState("");
+  const [pin,setPin] = useState("");
 
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [username,setUsername] = useState("");
+  const [savedUsername,setSavedUsername] = useState("");
 
-  const [editMode, setEditMode] = useState(false);
-  const [editSpotifyLink, setEditSpotifyLink] = useState("");
-  const [editPin, setEditPin] = useState("");
+  const [error,setError] = useState("");
+  const [success,setSuccess] = useState("");
 
-  const safeTag = useMemo(() => (tagId || "").toString().trim(), [tagId]);
+  const [editMode,setEditMode] = useState(false);
+  const [editSpotifyLink,setEditSpotifyLink] = useState("");
+  const [editPin,setEditPin] = useState("");
+
+  const safeTag = useMemo(()=> (tagId || "").trim(),[tagId]);
+
+  async function safeJson(res:Response){
+    try{
+      return await res.json();
+    }catch{
+      const txt = await res.text();
+      console.error(txt);
+      throw new Error("Server error");
+    }
+  }
 
   useEffect(() => {
-    async function load() {
-      setError("");
-      setSuccess("");
-      setLoading(true);
 
-      try {
-        const res = await fetch(`/api/tags/${safeTag}`);
-        const data = await res.json();
-
-        if (!data.exists) {
-          setExists(false);
-          return;
-        }
-
-        setExists(true);
-        setSpotifyLink(data.spotifyLink || "");
-        setSavedUsername(data.username || "");
-        setEditSpotifyLink(data.spotifyLink || "");
-      } catch (e) {
-        console.error(e);
-        setError("Eroare la încărcare.");
-        setExists(false);
-      } finally {
-        setLoading(false);
-      }
+    if (!safeTag) {
+      setLoading(false);
+      return;
     }
 
-    if (safeTag && safeTag !== "undefined") load();
+    async function loadTag() {
+
+      try {
+
+        setLoading(true);
+
+        const res = await fetch(`/api/tags/${safeTag}`);
+
+        if (!res.ok) throw new Error("API error");
+
+        const data = await res.json();
+
+        if (data.exists) {
+          setExists(true);
+          setSpotifyLink(data.spotifyLink || "");
+          setSavedUsername(data.username || "");
+          setEditSpotifyLink(data.spotifyLink || "");
+        } else {
+          setExists(false);
+        }
+
+      } catch (err) {
+
+        console.error(err);
+        setError("Eroare la încărcare");
+
+      } finally {
+
+        setLoading(false);
+
+      }
+
+    }
+
+    loadTag();
+
   }, [safeTag]);
 
-  useEffect(() => {
-    setError("");
-    setSuccess("");
-  }, [exists, editMode, safeTag]);
 
-  function isSpotifyUrl(url: string) {
-    try {
+  function isSpotifyUrl(url:string){
+    try{
       const u = new URL(url);
       return u.hostname.includes("spotify.com");
-    } catch {
+    }catch{
       return false;
     }
   }
 
-  async function activate() {
+  useEffect(() => {
+  setError("");
+  setSuccess("");
+}, [exists, editMode, safeTag]);
+
+  async function activate(){
+
     setError("");
 
     const link = spotifyLink.trim();
     const p = pin.trim();
     const u = username.trim();
 
-    if (!u) return setError("Introdu username");
-    if (!isSpotifyUrl(link)) return setError("Link Spotify invalid");
-    if (p.length < 4) return setError("PIN minim 4 caractere");
+    if(!u) return setError("Introdu username");
+    if(!isSpotifyUrl(link)) return setError("Link Spotify invalid");
+    if(p.length < 4) return setError("PIN minim 4 caractere");
 
-    try {
-      const res = await fetch(`/api/tags/${safeTag}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          spotifyLink: link,
-          pin: p,
-          username: u,
-        }),
+    try{
+
+      const res = await fetch(`/api/tags/${safeTag}`,{
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({
+          spotifyLink:link,
+          pin:p,
+          username:u
+        })
       });
 
-      const data = await res.json();
+      const data = await safeJson(res);
 
-      if (!data.success) return setError(data.error);
+      if(!res.ok || !data.success){
+        setError(data.error || "Server error");
+        return;
+      }
 
       setExists(true);
       setSavedUsername(u);
       setPin("");
-    } catch {
+
+    }catch(e){
+
+      console.error(e);
       setError("Eroare la salvare");
+
     }
   }
 
-  async function updateLink() {
+  async function updateLink(){
+
     setError("");
 
     const link = editSpotifyLink.trim();
     const p = editPin.trim();
 
-    if (!isSpotifyUrl(link)) return setError("Link invalid");
-    if (!p) return setError("PIN necesar");
+    if(!isSpotifyUrl(link)) return setError("Link invalid");
+    if(!p) return setError("PIN necesar");
 
-    try {
-      const res = await fetch(`/api/tags/${safeTag}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          spotifyLink: link,
-          pin: p,
-        }),
+    try{
+
+      const res = await fetch(`/api/tags/${safeTag}`,{
+        method:"PUT",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({
+          spotifyLink:link,
+          pin:p
+        })
       });
 
-      const data = await res.json();
+      const data = await safeJson(res);
 
-      if (!data.success) return setError(data.error);
+      if(!res.ok || !data.success){
+        setError(data.error || "Server error");
+        return;
+      }
 
       setSpotifyLink(link);
       setEditPin("");
       setEditMode(false);
-    } catch {
+
+    }catch(e){
+
+      console.error(e);
       setError("Eroare la actualizare");
+
     }
   }
 
-  const S: Record<string, React.CSSProperties> = {
-    page: {
-      minHeight: "100vh",
-      background:
-        "radial-gradient(1200px 800px at 50% -10%, #1e293b 0%, #0f172a 40%, #000000 85%)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: 24,
-      color: "#f1f5f9",
+
+  const S:Record<string,React.CSSProperties> = {
+
+    page:{
+      minHeight:"100vh",
+      background:"radial-gradient(1200px 800px at 50% -10%, #1e293b 0%, #0f172a 40%, #000000 85%)",
+      display:"flex",
+      alignItems:"center",
+      justifyContent:"center",
+      padding:24,
+      fontFamily:"ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto",
+      color:"#f1f5f9"
     },
 
-    card: {
-      width: "100%",
-      maxWidth: 420,
-      padding: 40,
-      display: "flex",
-      flexDirection: "column",
-      gap: 24,
+    card:{
+      width:"100%",
+      maxWidth:420,
+      padding:40,
+      display:"flex",
+      flexDirection:"column",
+      gap:24
     },
 
-    input: {
-      width: "100%",
-      padding: 14,
-      borderRadius: 16,
-      border: "1px solid rgba(0,0,0,0.15)",
-      background: "#ffffff",
-      color: "#0f172a",
+    section:{
+      display:"flex",
+      flexDirection:"column",
+      gap:14
     },
 
-    btn: {
-      width: "100%",
-      padding: 18,
-      borderRadius: 26,
-      border: "none",
-      background: "#1DB954",
-      color: "white",
-      fontWeight: 800,
-      cursor: "pointer",
+    input:{
+      width:"100%",
+      padding:14,
+      borderRadius:16,
+      border:"1px solid rgba(0,0,0,0.15)",
+      background:"#ffffff",
+      color:"#0f172a",
+      fontSize:14
     },
+
+    helper:{
+      fontSize:12,
+      opacity:0.6
+    },
+
+    btnPrimary:{
+      width:"100%",
+      padding:18,
+      borderRadius:26,
+      border:"none",
+      background:"#1DB954",
+      color:"white",
+      fontWeight:800,
+      fontSize:16,
+      cursor:"pointer",
+      boxShadow:"0 0 50px rgba(29,185,84,0.55)"
+    },
+
+    btnGhost:{
+      width:"100%",
+      padding:16,
+      borderRadius:24,
+      border:"1px solid rgba(255,255,255,0.15)",
+      background:"transparent",
+      color:"#cbd5e1",
+      fontWeight:600,
+      cursor:"pointer"
+    }
+
   };
 
+
   return (
+
     <div style={S.page}>
       <div style={S.card}>
-        <Image
-          src="/logo1.png"
-          alt="logo"
-          width={100}
-          height={100}
-          style={{ margin: "0 auto" }}
-        />
 
-        <h1 style={{ textAlign: "center", fontSize: 34 }}>
-          {savedUsername || username || "SOKEY"}
-        </h1>
 
-        {error && <div style={{ color: "red" }}>{error}</div>}
+        {/* LOGO + USERNAME */}
+
+        <div style={{...S.section,alignItems:"center",textAlign:"center",position:"relative"}}>
+
+          <div
+            style={{
+              position:"absolute",
+              width:240,
+              height:240,
+              background:"radial-gradient(circle, rgba(29,185,84,0.35) 0%, rgba(29,185,84,0.15) 40%, transparent 70%)",
+              filter:"blur(50px)",
+              borderRadius:"50%"
+            }}
+          />
+
+          <Image
+            src="/logo1.png"
+            alt="Logo"
+            width={100}
+            height={100}
+            style={{
+              zIndex:1,
+              filter:"brightness(1.5) contrast(1.2) drop-shadow(0 0 30px rgba(29,185,84,0.7))"
+            }}
+          />
+          <div
+  style={{
+    color: "#f87171",
+    position: "absolute",
+    top: 165,
+    left: 0,
+    right: 0,
+    textAlign: "left",
+  }}
+>
+  {error}
+</div>
+
+          <div
+            style={{
+              fontSize:38,
+              fontWeight:900,
+              letterSpacing:2,
+              fontFamily:"'Poppins','Montserrat',sans-serif",
+              background:"linear-gradient(90deg,#1DB954,#4ade80,#22d3ee)",
+              WebkitBackgroundClip:"text",
+              WebkitTextFillColor:"transparent",
+              textShadow:"0 0 35px rgba(29,185,84,0.4)"
+            }}
+          >
+            {savedUsername || username || "SOKEY"}
+          </div>
+
+        </div>
+
+        {success && <div style={{color:"#4ade80"}}>{success}</div>}
+
 
         {!exists ? (
+
           <>
-            <input
-              style={S.input}
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
+            <div style={S.section}>
+              <div>Username</div>
+              <input
+                value={username}
+                onChange={(e)=>setUsername(e.target.value)}
+                placeholder="Ex: sokey"
+                style={S.input}
+              />
+            </div>
 
-            <input
-              style={S.input}
-              placeholder="Link Spotify"
-              value={spotifyLink}
-              onChange={(e) => setSpotifyLink(e.target.value)}
-            />
+            <div style={S.section}>
+              <div>Link Spotify</div>
+              <input
+                value={spotifyLink}
+                onChange={(e)=>setSpotifyLink(e.target.value)}
+                placeholder="https://open.spotify.com/track/..."
+                style={S.input}
+              />
+            </div>
+            
 
-            <input
-              style={S.input}
-              type="password"
-              placeholder="PIN"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-            />
+            <div style={S.section}>
+              <div>PIN</div>
+              <input
+                value={pin}
+                onChange={(e)=>setPin(e.target.value)}
+                type="password"
+                placeholder="Minim 4 caractere"
+                style={S.input}
+              />
+              <div style={S.helper}>
+                PIN-ul este necesar pentru modificări ulterioare
+              </div>
+            </div>
 
-            <button style={S.btn} onClick={activate}>
-              Activează
+            <button onClick={activate} style={S.btnPrimary}>
+              Activează & Salvează
             </button>
+
           </>
+
         ) : (
+
           <>
             <button
-              style={S.btn}
-              onClick={() => (window.location.href = spotifyLink)}
+              onClick={()=>spotifyLink && (window.location.href = spotifyLink)}
+              style={S.btnPrimary}
             >
               Deschide Spotify
             </button>
 
-            <button onClick={() => setEditMode(!editMode)}>
-              Modifică link
+            <button
+              onClick={()=>setEditMode(!editMode)}
+              style={S.btnGhost}
+            >
+              {editMode ? "Renunță" : "Modifică link-ul"}
             </button>
 
             {editMode && (
+
               <>
-                <input
-                  style={S.input}
-                  value={editSpotifyLink}
-                  onChange={(e) => setEditSpotifyLink(e.target.value)}
-                />
+                <div style={S.section}>
+                  <div>Link nou Spotify</div>
+                  <input
+                    value={editSpotifyLink}
+                    onChange={(e)=>setEditSpotifyLink(e.target.value)}
+                    style={S.input}
+                  />
+                </div>
 
-                <input
-                  style={S.input}
-                  type="password"
-                  placeholder="PIN"
-                  value={editPin}
-                  onChange={(e) => setEditPin(e.target.value)}
-                />
+                <div style={S.section}>
+                  <div>PIN</div>
+                  <input
+                    value={editPin}
+                    onChange={(e)=>setEditPin(e.target.value)}
+                    type="password"
+                    style={S.input}
+                  />
+                </div>
 
-                <button style={S.btn} onClick={updateLink}>
-                  Salvează
+                <button onClick={updateLink} style={S.btnPrimary}>
+                  Salvează modificarea
                 </button>
+
               </>
             )}
+
           </>
+
         )}
+
       </div>
     </div>
+
   );
+
 }
