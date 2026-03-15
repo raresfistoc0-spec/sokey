@@ -1,6 +1,5 @@
 import TagClient from "./tag-client";
 import { db } from "@/lib/firebaseAdmin";
-import { redirect } from "next/navigation";
 
 export default async function Page({
   params,
@@ -10,26 +9,32 @@ export default async function Page({
 
   const { tagId } = await params;
 
-  const ref = db.collection("tags").doc(tagId);
-  const snap = await ref.get();
+  let initialExists = false;
+  let initialSpotifyLink = "";
+  let initialUsername = "";
 
-  if (snap.exists) {
+  try {
 
-    const data = snap.data();
-    const spotifyLink = data?.spotifyLink;
+    const doc = await db.collection("tags").doc(tagId).get();
 
-    if (spotifyLink) {
-      redirect(spotifyLink);
+    if (doc.exists) {
+      const data = doc.data();
+
+      initialExists = true;
+      initialSpotifyLink = data?.spotifyLink || "";
+      initialUsername = data?.username || "";
     }
 
+  } catch (e) {
+    console.error("Firebase error:", e);
   }
 
   return (
     <TagClient
       tagId={tagId}
-      initialExists={false}
-      initialSpotifyLink=""
-      initialUsername=""
+      initialExists={initialExists}
+      initialSpotifyLink={initialSpotifyLink}
+      initialUsername={initialUsername}
     />
   );
 }
