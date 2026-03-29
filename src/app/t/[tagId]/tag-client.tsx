@@ -265,6 +265,23 @@ export default function TagClient({
         </div>
 
         {success && <div style={{color:"#4ade80"}}>{success}</div>}
+{error && (
+  <div style={{
+    position:"absolute",
+    top:20,
+    left:"50%",
+    transform:"translateX(-50%)",
+    background:"rgba(239,68,68,0.9)",
+    color:"white",
+    padding:"12px 20px",
+    borderRadius:20,
+    fontWeight:700,
+    boxShadow:"0 0 20px rgba(239,68,68,0.6)",
+    zIndex:10
+  }}>
+    {error}
+  </div>
+)}
 
 
         {!exists ? (

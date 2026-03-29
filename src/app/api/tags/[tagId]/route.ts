@@ -11,6 +11,16 @@ type TagDoc = {
 };
 
 // =========================
+// HELPER 🔒
+async function checkAllowed(tagId: string) {
+  const allowedRef = db.collection("allowedTags").doc(tagId);
+  const allowedSnap = await allowedRef.get();
+  return allowedSnap.exists;
+}
+// =========================
+
+
+// =========================
 // GET TAG
 // =========================
 
@@ -20,7 +30,6 @@ export async function GET(
 ) {
 
   const { tagId } = await params;
-
   const cleanTag = tagId?.toString().trim();
 
   if (!cleanTag) {
@@ -31,7 +40,18 @@ export async function GET(
   }
 
   try {
-    const ref = db.collection("tags").doc(tagId);
+
+    // 🔒 CHECK allowedTags
+    const isAllowed = await checkAllowed(cleanTag);
+
+    if (!isAllowed) {
+      return NextResponse.json(
+        { success: false, error: "Tag invalid" },
+        { status: 403 }
+      );
+    }
+
+    const ref = db.collection("tags").doc(cleanTag);
     const snap = await ref.get();
 
     if (!snap.exists) {
@@ -51,6 +71,7 @@ export async function GET(
       spotifyLink: data.spotifyLink || "",
       username: data.username || "",
     });
+
   } catch (err) {
     console.error(err);
 
@@ -61,8 +82,9 @@ export async function GET(
   }
 }
 
+
 // =========================
-// CREATE TAG
+// CREATE / UPDATE (POST)
 // =========================
 
 export async function POST(
@@ -71,10 +93,27 @@ export async function POST(
 ) {
 
   const { tagId } = await params;
-
   const cleanTag = tagId?.toString().trim();
 
+  if (!cleanTag) {
+    return NextResponse.json(
+      { success: false, error: "Tag invalid" },
+      { status: 400 }
+    );
+  }
+
   try {
+
+    // 🔒 CHECK allowedTags
+    const isAllowed = await checkAllowed(cleanTag);
+
+    if (!isAllowed) {
+      return NextResponse.json(
+        { success: false, error: "Tag invalid" },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
 
     const spotifyLink = body?.spotifyLink?.toString().trim();
@@ -95,11 +134,12 @@ export async function POST(
       );
     }
 
-    const ref = db.collection("tags").doc(tagId);
+    const ref = db.collection("tags").doc(cleanTag);
     const snap = await ref.get();
 
-    // CREATE TAG
+    // ================= CREATE =================
     if (!snap.exists) {
+
       if (!username) {
         return NextResponse.json(
           { success: false, error: "Username obligatoriu" },
@@ -117,26 +157,20 @@ export async function POST(
         updatedAt: new Date(),
       });
 
+      // 🔥 OPTIONAL: one-time use
+      await db.collection("allowedTags").doc(cleanTag).delete();
+
       return NextResponse.json({
         success: true,
         mode: "created",
       });
     }
 
-    // UPDATE EXISTING TAG
+    // ================= UPDATE =================
 
     const data = snap.data() as TagDoc;
 
-    const pinHash = data?.pinHash;
-
-    if (!pinHash) {
-      return NextResponse.json(
-        { success: false, error: "PIN lipsă în DB" },
-        { status: 400 }
-      );
-    }
-
-    const ok = await bcrypt.compare(pin, pinHash);
+    const ok = await bcrypt.compare(pin, data.pinHash || "");
 
     if (!ok) {
       return NextResponse.json(
@@ -154,6 +188,7 @@ export async function POST(
       success: true,
       mode: "updated",
     });
+
   } catch (err) {
     console.error(err);
 
@@ -164,8 +199,9 @@ export async function POST(
   }
 }
 
+
 // =========================
-// UPDATE TAG
+// UPDATE TAG (PUT)
 // =========================
 
 export async function PUT(
@@ -174,10 +210,17 @@ export async function PUT(
 ) {
 
   const { tagId } = await params;
-
   const cleanTag = tagId?.toString().trim();
 
+  if (!cleanTag) {
+    return NextResponse.json(
+      { success: false, error: "Tag invalid" },
+      { status: 400 }
+    );
+  }
+
   try {
+
     const body = await req.json();
 
     const spotifyLink = body?.spotifyLink?.toString().trim();
@@ -197,7 +240,7 @@ export async function PUT(
       );
     }
 
-    const ref = db.collection("tags").doc(tagId);
+    const ref = db.collection("tags").doc(cleanTag);
     const snap = await ref.get();
 
     if (!snap.exists) {
@@ -227,6 +270,7 @@ export async function PUT(
       success: true,
       mode: "updated",
     });
+
   } catch (err) {
     console.error(err);
 
