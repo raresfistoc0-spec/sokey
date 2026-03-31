@@ -267,17 +267,20 @@ export default function TagClient({
         {success && <div style={{color:"#4ade80"}}>{success}</div>}
 {error && (
   <div style={{
-    position:"absolute",
-    top:20,
-    left:"50%",
-    transform:"translateX(-50%)",
-    background:"rgba(239,68,68,0.9)",
-    color:"white",
-    padding:"12px 20px",
-    borderRadius:20,
-    fontWeight:700,
-    boxShadow:"0 0 20px rgba(239,68,68,0.6)",
-    zIndex:10
+    position: "fixed",
+    top: 20,
+    left: "50%",
+    transform: "translateX(-50%)",
+    background: "rgba(15,23,42,0.9)",
+    color: "#f87171",
+    padding: "12px 18px",
+    borderRadius: 16,
+    fontWeight: 600,
+    textAlign: "center",
+    boxShadow: "0 8px 30px rgba(0,0,0,0.6)",
+    border: "1px solid rgba(248,113,113,0.3)",
+    backdropFilter: "blur(10px)",
+    zIndex: 9999
   }}>
     {error}
   </div>
